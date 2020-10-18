@@ -5,6 +5,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.util.Log
+import android.util.Size
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -84,6 +85,7 @@ class MainActivity : AppCompatActivity() {
 
             // Preview
             val preview = Preview.Builder()
+                .setTargetResolution(Size(1080, 1080))
                 .build()
                 .also {
                     it.setSurfaceProvider(viewFinder.createSurfaceProvider())
