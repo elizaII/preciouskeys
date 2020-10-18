@@ -3,32 +3,41 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.media.Image
 import android.net.Uri
 import android.util.Log
 import android.util.Size
+import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import java.util.concurrent.Executors
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
+import com.example.preciouskeys.util.ImageClassifier
+import com.example.preciouskeys.util.Keys
+import io.reactivex.rxkotlin.subscribeBy
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
-import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
-typealias LumaListener = (luma: Double) -> Unit
 
 class MainActivity : AppCompatActivity() {
     private var imageCapture: ImageCapture? = null
 
     private lateinit var outputDirectory: File
     private lateinit var cameraExecutor: ExecutorService
+    private lateinit var classifier: ImageClassifier
+    private lateinit var photoImage: Bitmap
+    private lateinit var txtResult: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        txtResult = findViewById(R.id.txtResult)
 
         // Request camera permissions
         if (allPermissionsGranted()) {
@@ -44,6 +53,8 @@ class MainActivity : AppCompatActivity() {
         outputDirectory = getOutputDirectory()
 
         cameraExecutor = Executors.newSingleThreadExecutor()
+
+        classifier = ImageClassifier(getAssets())
     }
 
     private fun takePhoto() {
@@ -59,21 +70,49 @@ class MainActivity : AppCompatActivity() {
         // Create output options object which contains file + metadata
         val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
 
-        // Set up image capture listener, which is triggered after photo has
-        // been taken
-        imageCapture.takePicture(
-            outputOptions, ContextCompat.getMainExecutor(this), object : ImageCapture.OnImageSavedCallback {
-                override fun onError(exc: ImageCaptureException) {
-                    Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
-                }
+//        // Set up image capture listener, which is triggered after photo has
+//        // been taken
+//        imageCapture.takePicture(
+//            outputOptions, ContextCompat.getMainExecutor(this), object : ImageCapture.OnImageSavedCallback {
+//                override fun onError(exc: ImageCaptureException) {
+//                    Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
+//                }
+//
+//                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+//                    val savedUri = Uri.fromFile(photoFile)
+//                    val msg = "Photo capture succeeded: $savedUri"
+//                    Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
+//                    Log.d(TAG, msg)
+//                }
+//            })
 
-                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                    val savedUri = Uri.fromFile(photoFile)
-                    val msg = "Photo capture succeeded: $savedUri"
-                    Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
-                    Log.d(TAG, msg)
+        // Set up image capture listener, which is triggered after photo has
+        // been taken.
+        imageCapture.takePicture(ContextCompat.getMainExecutor(this), object : ImageCapture.OnImageCapturedCallback() {
+            @androidx.camera.core.ExperimentalGetImage
+            override fun onCaptureSuccess(image: ImageProxy) {
+                // Use the image, then make sure to close it.
+                try {
+                    // Classify the image taken and update the text
+                    if (::photoImage.isInitialized) photoImage.recycle()
+                    photoImage = image.image?.toBitmap()!!
+                    photoImage = Bitmap.createScaledBitmap(photoImage, Keys.INPUT_SIZE, Keys.INPUT_SIZE, false)
+                    classifier.recognizeImage(photoImage).subscribeBy(
+                        onSuccess = {
+                            txtResult.text = it.toString()
+                        }
+                    )
+
+                    image.close()
+
+                } catch (e: java.lang.Exception) {
+                    e.printStackTrace()
                 }
-            })
+            }
+            override fun onError(exc: ImageCaptureException) {
+                Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
+            }
+        })
     }
 
     private fun startCamera() {
@@ -134,5 +173,13 @@ class MainActivity : AppCompatActivity() {
         private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
         private const val REQUEST_CODE_PERMISSIONS = 10
         private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
+    }
+
+    private fun Image.toBitmap(): Bitmap {
+        val buffer = planes[0].buffer
+        buffer.rewind()
+        val bytes = ByteArray(buffer.capacity())
+        buffer.get(bytes)
+        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
     }
 }
