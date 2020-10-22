@@ -5,10 +5,12 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.media.Image
 import android.net.Uri
 import android.util.Log
 import android.util.Size
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
@@ -33,11 +35,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var classifier: ImageClassifier
     private lateinit var photoImage: Bitmap
     private lateinit var txtResult: TextView
+    private lateinit var lockImageOne: ImageView
+    private var matrix: Matrix = Matrix()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         txtResult = findViewById(R.id.txtResult)
+        lockImageOne = findViewById(R.id.imageView)
 
         // Request camera permissions
         if (allPermissionsGranted()) {
@@ -55,6 +60,7 @@ class MainActivity : AppCompatActivity() {
         cameraExecutor = Executors.newSingleThreadExecutor()
 
         classifier = ImageClassifier(getAssets())
+        matrix.postRotate(90F);
     }
 
     private fun takePhoto() {
@@ -99,9 +105,14 @@ class MainActivity : AppCompatActivity() {
                     photoImage = Bitmap.createScaledBitmap(photoImage, Keys.INPUT_SIZE, Keys.INPUT_SIZE, false)
                     classifier.recognizeImage(photoImage).subscribeBy(
                         onSuccess = {
-                            txtResult.text = it.toString()
+                            var result = "";
+                            it.forEach { res -> result += String.format("%s: %.2f \n", res.title.toString().capitalize(), res.confidence) }
+                            txtResult.text = result.dropLast(2) // Remove last line break
                         }
                     )
+
+                    lockImageOne.setImageBitmap(photoImage);
+                    lockImageOne.rotation = 90F;
 
                     image.close()
 
