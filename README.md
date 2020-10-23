@@ -1,10 +1,10 @@
-# Precious Keys
+# Se•Key•Quence
 
-This application is built for the course [CIU196 Mobile Computing – Design and Implementation at Chalmers](https://chalmers.instructure.com/courses/10409/assignments/syllabus). The idea is to capture a sequence of photos which a machine learning model (Tensorflow Lite) will classify. The objects detected in the photos by Tensorflow are stored as the unique password, and in order to unlock the user has to capture the same objects in the same sequence again. Precious Keys is, as of current (Oct 2020), merely a proof of concept.
+This application is built for the course [CIU196 Mobile Computing – Design and Implementation at Chalmers](https://chalmers.instructure.com/courses/10409/assignments/syllabus). The idea is to capture a sequence of photos which a machine learning model (Tensorflow Lite) will classify. The objects detected in the photos by Tensorflow are to be stored as the unique password, and in order to unlock the user has to capture the same objects in the same sequence again. Precious Keys is, as of current (Oct 2020), merely a proof of concept. Its current stage is for researching the technological feasibility of this concept.
 
 ### Website
 
-More information can be found on [tuyen.me/precious-keys](https://tuyen.me/precious-keys).
+More information can be found on [tuyen.me/sekeyquence](https://tuyen.me/sekeyquence).
 
 ## Prequisites
 
